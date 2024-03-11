@@ -1,23 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ApiResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CryptocurrencyService } from './cryptocurrency.service';
-import { getCryptoCurrencies } from 'src/shared/services/http/get-crypto-currencies';
+import { CryptoCurrenciesRO } from './cryptocurrency.interface';
 
-@Controller('cryptocurrencies')
 @ApiTags('cryptocurrencies')
+@Controller('cryptocurrencies')
 export class CryptocurrencyController {
-  constructor(
-    private configService: ConfigService,
-    private readonly appService: CryptocurrencyService,
-  ) {}
+  constructor(private readonly appService: CryptocurrencyService) {}
 
-  @Get('/')
-  async getCryptocurrencies(): Promise<any> {
-    const apiUrl = this.configService.get<string>('COIN_MARKET_CAP_API_URL');
-    const data = await getCryptoCurrencies(apiUrl);
-
-    return data;
+  @ApiOperation({ summary: 'Get all crypto currencies' })
+  @ApiResponse({ status: 200, description: 'Return all crypto currencies.' })
+  @Get()
+  async getCryptocurrencies(@Query() query): Promise<CryptoCurrenciesRO> {
+    return await this.appService.findAll(query);
   }
 }

@@ -7,7 +7,7 @@ import { CryptocurrencyModule } from '../cryptocurrency/app.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: `./config/.development.env`,
+      envFilePath: `./config/.${process.env.NODE_ENV || 'local'}.env`,
       isGlobal: true,
     }),
     CryptocurrencyModule,
