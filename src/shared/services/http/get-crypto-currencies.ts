@@ -14,7 +14,7 @@ export const getCryptoCurrenciesList = async (apiUrl: string) => {
           convert: 'USD,BTC,ETH',
           cryptoType: 'all',
           tagType: 'all',
-          //   audited: false,
+          audited: false,
           //   'ath,atl,high24h,low24h,num_market_pairs,cmc_rank,date_added,tags,platform,max_supply,circulating_supply,self_reported_circulating_supply,self_reported_market_cap,total_supply,volume_7d,volume_30d',
           tagSlugs: 'memes',
         },
