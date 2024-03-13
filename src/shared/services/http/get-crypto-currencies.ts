@@ -37,7 +37,7 @@ export const getCryptoCurrencies = async (apiUrl: string, apiKey: string) => {
         },
         params: {
           start: 1,
-          limit: 100,
+          limit: 10,
           sort: 'market_cap',
           sort_dir: 'desc',
           convert: 'USD',
