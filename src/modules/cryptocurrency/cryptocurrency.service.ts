@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { getCryptoCurrenciesList } from 'src/shared/services/http/get-crypto-currencies';
+import { getCryptoCurrenciesList } from '@root/shared/services/http/get-crypto-currencies';
 import { CryptoCurrenciesRO } from './cryptocurrency.interface';
 
 @Injectable()
@@ -28,6 +28,17 @@ export class CryptocurrencyService {
     const totalTurnoverhWeight = query.total_turnover_weight || 0.1;
     const is_audited = query.is_audited || true;
 
+    const symbolStr = query.symbol || '';
+    const symbols = symbolStr
+      .split(',')
+      .map((item) => {
+        const [name, value = 0] = item.split('(');
+        if (name.trim()) {
+          return { name: name.trim(), value: parseFloat(value) };
+        }
+      })
+      .filter((item) => item);
+
     const listApiUrl = this.configService.get<string>(
       'COIN_MARKET_CAP_LIST_API_URL',
     );
@@ -52,17 +63,28 @@ export class CryptocurrencyService {
         const scoreMarketCap = await this.getMarketCapScore(marketCaps, index);
         const scoreVolume24h = await this.getMarketCapScore(volume24hs, index);
 
+        // calculate total score
+        let scoreTotal =
+          (totalPriceWeight * scorePrice +
+            totalMarketcapWeight * scoreMarketCap +
+            totalVolume24hWeight * scoreVolume24h +
+            totalTurnoverhWeight * currency.quotes[2].turnover) *
+          (is_audited ? 1 : 0.9);
+
+        const containsSymbol = symbols.find(
+          (item) => item.name === currency.symbol,
+        );
+
+        if (containsSymbol) {
+          scoreTotal = scoreTotal + Math.abs(scoreTotal) * containsSymbol.value;
+        }
+
         return {
           ...currency,
           scorePrice,
           scoreMarketCap,
           scoreVolume24h,
-          scoreTotal:
-            (totalPriceWeight * scorePrice +
-              totalMarketcapWeight * scoreMarketCap +
-              totalVolume24hWeight * scoreVolume24h +
-              totalTurnoverhWeight * currency.quotes[2].turnover) *
-            (is_audited ? 1 : 0.9),
+          scoreTotal,
         };
       }),
     );
