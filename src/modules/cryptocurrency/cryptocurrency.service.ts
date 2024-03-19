@@ -1,15 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { getCryptoCurrenciesList } from '@root/shared/services/http/get-crypto-currencies';
+import {
+  // getCryptoCurrenciesList,
+  // getCryptoCurrencies,
+  getQuotes,
+} from '@root/shared/services/http/get-crypto-currencies';
 import { CryptoCurrenciesRO } from './cryptocurrency.interface';
+import { MEME_COIN_IDS } from '@root/shared/constants';
 
 @Injectable()
 export class CryptocurrencyService {
   constructor(private readonly configService: ConfigService) {}
 
   async findAll(query): Promise<CryptoCurrenciesRO> {
-    const priceChangeWeight = [
+    const priceChangeWeights = [
       query.price_change_hour_weight || 0.03,
       query.price_change_day_weight || 0.07,
       query.price_change_7_day_weight || 0.1,
@@ -18,14 +23,14 @@ export class CryptocurrencyService {
       query.price_change_90_day_weight || 0.4,
     ];
 
-    // console.log(priceChangeWeight);
+    // console.log(priceChangeWeights);
 
     const priceThread = query.price_thread || 5;
 
     const totalPriceWeight = query.total_price_weight || 0.3;
     const totalMarketcapWeight = query.total_marketcap_weight || 0.3;
     const totalVolume24hWeight = query.total_volume24h_weight || 0.3;
-    const totalTurnoverhWeight = query.total_turnover_weight || 0.1;
+    // const totalTurnoverhWeight = query.total_turnover_weight || 0.1;
     const is_audited = query.is_audited || true;
 
     const symbolStr = query.symbol || '';
@@ -39,25 +44,33 @@ export class CryptocurrencyService {
       })
       .filter((item) => item);
 
-    const listApiUrl = this.configService.get<string>(
-      'COIN_MARKET_CAP_LIST_API_URL',
+    // const listApiUrl = this.configService.get<string>(
+    //   'COIN_MARKET_CAP_LIST_API_URL',
+    // );
+
+    const apiUrl = this.configService.get<string>('COIN_MARKET_CAP_API_URL');
+    const apiKey = this.configService.get<string>('COIN_MARKET_CAP_API_KEY');
+
+    // const currencies1 = await getCryptoCurrenciesList(listApiUrl);
+    // const currencies = await getCryptoCurrencies(apiUrl, apiKey);
+
+    const coinIds = MEME_COIN_IDS.join(',');
+
+    const currencies: Array<any> = await getQuotes(apiUrl, apiKey, coinIds);
+
+    const marketCaps = currencies.map(
+      (currency) => currency.quote.USD.market_cap,
     );
 
-    const currencies = await getCryptoCurrenciesList(listApiUrl);
-
-    const marketCaps = currencies.data.cryptoCurrencyList.map(
-      (currency) => currency.quotes[2].marketCap,
-    );
-
-    const volume24hs = currencies.data.cryptoCurrencyList.map(
-      (currency) => currency.quotes[2].volume24h,
+    const volume24hs = currencies.map(
+      (currency) => currency.quote.USD.volume_24h,
     );
 
     const currenciesWithStats = await Promise.all(
-      currencies.data.cryptoCurrencyList.map(async (currency, index) => {
+      currencies.map(async (currency, index) => {
         const scorePrice = await this.getPriceChangeScore(
-          currency.quotes[2],
-          priceChangeWeight,
+          currency.quote.USD,
+          priceChangeWeights,
           priceThread,
         );
         const scoreMarketCap = await this.getMarketCapScore(marketCaps, index);
@@ -67,8 +80,8 @@ export class CryptocurrencyService {
         let scoreTotal =
           (totalPriceWeight * scorePrice +
             totalMarketcapWeight * scoreMarketCap +
-            totalVolume24hWeight * scoreVolume24h +
-            totalTurnoverhWeight * currency.quotes[2].turnover) *
+            totalVolume24hWeight * scoreVolume24h) * // +
+          // totalTurnoverhWeight * currency.quote.USD.turnover) *
           (is_audited ? 1 : 0.9);
 
         const containsSymbol = symbols.find(
@@ -91,22 +104,22 @@ export class CryptocurrencyService {
 
     return {
       data: currenciesWithStats.sort((a, b) => b.scoreTotal - a.scoreTotal),
-      status: currencies.status,
+      status: {},
     };
   }
 
   getPriceChangeScore = async (
     currency: any,
-    priceChangeWeight: Array<number>,
+    priceChangeWeights: Array<number>,
     priceThread: number,
   ) => {
     const quotes = [
-      currency.percentChange1h / 100,
-      currency.percentChange24h / 100,
-      currency.percentChange7d / 100,
-      currency.percentChange30d / 100,
-      currency.percentChange60d / 100,
-      currency.percentChange90d / 100,
+      currency.percent_change_1h / 100,
+      currency.percent_change_24h / 100,
+      currency.percent_change_7d / 100,
+      currency.percent_change_30d / 100,
+      currency.percent_change_60d / 100,
+      currency.percent_change_90d / 100,
     ];
     // Calculate the mean
     const mean =
@@ -123,7 +136,7 @@ export class CryptocurrencyService {
     const priceChangeScore = quotes.reduce(
       (sum, priceChange, index) =>
         sum +
-        priceChangeWeight[index] * priceChange * (1 - variance / priceThread),
+        priceChangeWeights[index] * priceChange * (1 - variance / priceThread),
       0,
     );
 

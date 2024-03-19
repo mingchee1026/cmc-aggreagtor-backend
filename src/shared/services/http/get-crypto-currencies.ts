@@ -19,12 +19,12 @@ export const getCryptoCurrenciesList = async (apiUrl: string) => {
           tagSlugs: 'memes',
         },
       })
-      .then((response) => response.data);
+      .then((response) => response.data.data.cryptoCurrencyList);
 
     return data;
   } catch (error) {
     console.log(error.message);
-    return {};
+    return [];
   }
 };
 
@@ -37,7 +37,7 @@ export const getCryptoCurrencies = async (apiUrl: string, apiKey: string) => {
         },
         params: {
           start: 1,
-          limit: 100,
+          limit: 5000,
           sort: 'market_cap',
           sort_dir: 'desc',
           convert: 'USD',
@@ -50,6 +50,33 @@ export const getCryptoCurrencies = async (apiUrl: string, apiKey: string) => {
     return data;
   } catch (error) {
     console.log(error.message);
-    return {};
+    return [];
+  }
+};
+
+export const getQuotes = async (
+  apiUrl: string,
+  apiKey: string,
+  coinIds: string,
+) => {
+  try {
+    const data = await axios
+      .get(`${apiUrl}/v2/cryptocurrency/quotes/latest`, {
+        headers: {
+          'X-CMC_PRO_API_KEY': apiKey,
+        },
+        params: {
+          id: coinIds,
+          // symbol: 'USD',
+        },
+      })
+      .then((response) => response.data);
+
+    const quotes = Object.values(data.data);
+
+    return quotes;
+  } catch (error) {
+    console.log(error.message);
+    return [];
   }
 };

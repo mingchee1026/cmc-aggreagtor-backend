@@ -8,3 +8,21 @@ export const PRICE_CHANGE_WEIGHT = [
 ];
 
 export const PRICE_THREAD: number = 5;
+
+export const MEME_COIN_IDS = [
+  24478, // PEPE
+  25269, // BOBO
+  25058, // DOLAN
+  29870, // BOME
+  25269, // BOBO
+  28782, // POPCAT
+  29590, // BCAT
+  26896, // DOGE
+  28752, // WIF
+  28382, // MYRO
+  29430, // SHIB
+  27659, // MOG
+  25220, // BITCOIN
+  8435, // SLOTH
+  23095, //BONK
+];
